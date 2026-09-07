@@ -4,7 +4,7 @@
 
 You will build a **Python CLI-based Retrieval-Augmented Generation (RAG) system** powered by Claude. The system uses specialised agents to answer both qualitative and quantitative questions about enterprise documentation.
 
-The capstone covers the full pipeline: retrieval, prompt design, Claude API integration, and output validation. You must demonstrate trust-but-verify in practice — interrogating Claude's output, building guardrails, and accounting for tokenomics in your prompt design choices. A working application is not sufficient on its own. The validation layer and the tokenomics documentation are required deliverables.
+The capstone covers the full pipeline: retrieval, prompt design, Claude API integration, and output validation. You must demonstrate trust-but-verify in practice by evaluating Claude's output, building guardrails, and accounting for tokenomics in your prompt design choices. A working application is not sufficient on its own. The validation layer and the tokenomics documentation are required deliverables.
 
 ---
 
