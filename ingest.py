@@ -25,7 +25,7 @@ def ingest(docs_path: str):
         embeddings = model.encode(chunks).tolist()
         ids = [f"{filename}-{i}" for i in range(len(chunks))]
         metadatas = [{"source": filename, "chunk": i} for i in range(len(chunks))]
-        collection.add(documents=chunks, embeddings=embeddings, ids=ids, metadatas=metadatas)
+        collection.upsert(documents=chunks, embeddings=embeddings, ids=ids, metadatas=metadatas)
         print(f"Ingested {len(chunks)} chunks from {filename}")
 
 if __name__ == "__main__":

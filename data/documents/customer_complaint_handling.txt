@@ -1,0 +1,67 @@
+# Spoonful Customer Complaint Handling Procedure
+
+Owner: Director of Customer Support
+Applies to: Customer Support, Customer Success, Account Management, and anyone who receives a complaint from a customer
+Last reviewed: June 2025
+
+## About this procedure
+
+A complaint is any expression of dissatisfaction from a customer about our product, service, billing, or staff, whether or not the customer uses the word "complaint". Handling complaints well is one of the strongest drivers of customer retention: customers whose complaints are resolved quickly are more likely to renew than customers who never complained at all.
+
+This procedure explains how complaints are received, prioritised, resolved, and learned from.
+
+## Receiving a complaint
+
+Customers can raise complaints through any of these channels:
+
+- The in-app support widget
+- Email to support@spoonful.example
+- Phone support (Enterprise plan customers only)
+- Their Customer Success Manager (CSM) or Account Executive
+
+Whoever receives the complaint must log it as a ticket in the support system within 1 business hour, even if they intend to resolve it themselves. Complaints received by CSMs or Account Executives must be tagged "complaint" so they appear in reporting. A complaint that is not logged cannot be tracked, and an untracked complaint is the most common reason a customer escalates.
+
+## Prioritising complaints
+
+Each complaint is assigned a priority when it is logged.
+
+- P1 (Critical): The customer cannot use Spoonful at all, data is lost or exposed, or the customer has threatened legal action or cancellation. First response within 1 hour, 24 hours a day.
+- P2 (High): A major feature is unavailable or billing is significantly wrong. First response within 4 business hours.
+- P3 (Normal): A feature is not working as expected, but a workaround exists. First response within 1 business day.
+- P4 (Low): Feedback, feature requests framed as complaints, or minor issues. First response within 2 business days.
+
+Any complaint involving a possible security or data exposure issue must also be reported to the Security team as described in the Information Security Policy.
+
+## Resolving a complaint
+
+1. Acknowledge: Respond within the time for the priority level. Thank the customer, restate the problem in your own words, and tell them what happens next and when they will next hear from us.
+2. Investigate: Reproduce the issue where possible and gather the facts. Involve Engineering through the escalation queue if a product defect is suspected.
+3. Resolve: Fix the problem, provide a workaround, or explain clearly why we cannot do what was asked. Never close a ticket without telling the customer the outcome.
+4. Confirm: Ask the customer to confirm that the issue is resolved. If they do not respond within 5 business days, the ticket may be closed with a final message.
+5. Survey: After closure, the customer receives a one-question satisfaction survey (score 1 to 10).
+
+Target resolution times are 1 business day for P1, 3 business days for P2, 7 business days for P3, and 15 business days for P4.
+
+## Escalation
+
+- If a complaint is not resolved within its target time, it is escalated automatically to the Support Team Lead.
+- If a P1 or P2 complaint is not resolved within twice its target time, it is escalated to the Director of Customer Support, and the customer's CSM is notified.
+- Complaints from customers flagged as "at risk" by Customer Success are always handled at P2 or higher.
+- Customers may request escalation to a manager at any time, and that request must be honoured within 1 business day.
+
+## Service credits and refunds
+
+Support agents may issue service credits of up to 10% of a customer's monthly fee without approval when a complaint is caused by a Spoonful service failure. Credits between 10% and 25% require approval from the Support Team Lead. Credits above 25% and all refunds require approval from the Director of Customer Support and Finance. Credits must be recorded on the ticket with the reason.
+
+## Root cause and learning
+
+- Every P1 complaint, and any issue that generates 5 or more complaints in a week, must have a root cause analysis completed within 10 business days.
+- The Support team publishes a monthly complaint report covering volume by priority, top complaint categories, average time to first response, average time to resolution, and post-resolution satisfaction scores.
+- The top 3 complaint categories each quarter are reviewed with Product and Engineering leadership and are considered during roadmap planning.
+
+## Performance targets
+
+- 95% of complaints receive a first response within the target time for their priority.
+- 90% of complaints are resolved within the target resolution time.
+- Average post-resolution satisfaction score of 8.0 or higher out of 10.
+- Fewer than 5% of closed complaints are reopened within 30 days.

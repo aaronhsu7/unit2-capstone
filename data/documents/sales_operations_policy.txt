@@ -1,0 +1,74 @@
+# Spoonful Sales Operations Policy
+
+Owner: Chief Revenue Officer (CRO)
+Applies to: Sales, Sales Operations, Deal Desk, and Finance
+Last reviewed: January 2025
+
+## Purpose
+
+This policy describes how Spoonful sells its products: our sales regions, our product catalogue and list prices, how discounts are approved, how deals are recorded, and how sales performance is reviewed. It exists to keep pricing consistent, protect margins, and make sure sales data is accurate enough to plan with.
+
+## Fiscal calendar
+
+Spoonful's fiscal year follows the calendar year.
+
+- Q1: January to March
+- Q2: April to June
+- Q3: July to September
+- Q4: October to December
+
+Q4 is historically our strongest quarter because many customers spend remaining annual budgets before year end. Sales capacity planning and promotional campaigns should account for this.
+
+## Sales regions
+
+Spoonful sells in four regions, each led by a Regional Sales Director:
+
+- North America: United States and Canada
+- EMEA: Europe, the Middle East, and Africa
+- APAC: Asia-Pacific, including Australia, Japan, Singapore, and India
+- LATAM: Latin America
+
+Accounts are assigned to the region of the customer's headquarters. Global deals that involve more than one region are credited to the region of the headquarters and require a split-commission agreement approved by Sales Operations.
+
+## Products and list prices
+
+All prices are annual, per unit. A unit is a block of user licences for the plans, or a single connector for Data Connect.
+
+- Spoonful Starter: $1,200 per unit per year. Self-serve analytics for small teams.
+- Spoonful Pro: $4,800 per unit per year. Advanced dashboards, scheduled reports, and role-based access control.
+- Spoonful Enterprise: $24,000 per unit per year. Single sign-on, audit logs, dedicated Customer Success Manager, and 99.9% uptime service level agreement.
+- Data Connect (add-on): $2,400 per unit per year. Managed connectors to external databases and data warehouses.
+
+List prices are reviewed every January. Price changes for existing customers take effect at their next renewal with at least 60 days' notice.
+
+## Discount approval
+
+Discounts are calculated against list price. Approval levels are:
+
+- Up to 10%: Account Executive may approve.
+- More than 10% and up to 20%: Regional Sales Director approval required.
+- More than 20% and up to 30%: VP of Sales approval required, with a written business case.
+- More than 30%: CRO and CFO approval required. These deals are reviewed by the Deal Desk.
+
+Discounts may not be offered to win a deal from an existing Spoonful customer in another region. Multi-year contracts may receive an additional 5% discount without further approval. Discounts cannot be combined with free months of service.
+
+## Deal Desk
+
+The Deal Desk reviews any deal with non-standard terms, including custom payment terms, contracts longer than 3 years, non-standard liability terms, and any discount above 30%. The Deal Desk aims to respond within 2 business days.
+
+## Recording sales
+
+- Every closed deal must be recorded in the CRM within 2 business days of signature, including region, product, number of units, net revenue after discount, and the close date.
+- Revenue figures in sales reporting are the net annual contract value after discounts.
+- Sales Operations reconciles CRM records with Finance at the end of every month. Discrepancies must be corrected before the month is closed.
+
+## Performance reviews and targets
+
+- Regional Sales Directors present monthly revenue, units sold, and pipeline for their region at the monthly revenue review.
+- Each quarter, the CRO reviews performance across regions against targets. A region that misses its quarterly target by more than 15% must present a recovery plan at the next review.
+- Fiscal year 2025 targets are year-on-year revenue growth of 10% in North America, 5% in EMEA, 30% in APAC, and 15% in LATAM. APAC is our priority growth region.
+- Account Executives' commission is paid on net revenue. Deals discounted more than 20% earn commission at a reduced rate of 75%.
+
+## Working with Customer Success
+
+Sales hands over every new customer to Customer Success within 5 business days of the deal closing, using the handover template. The handover must include the customer's goals, key contacts, and anything promised during the sales process. Expansion opportunities identified by Customer Success are passed back to the account's Account Executive, who must respond within 3 business days.

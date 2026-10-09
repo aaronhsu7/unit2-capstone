@@ -1,0 +1,76 @@
+# Spoonful Customer Success Strategy
+
+Owner: VP of Customer Success
+Planning period: Fiscal years 2025 and 2026
+Last reviewed: February 2025
+
+## Purpose
+
+Spoonful sells subscriptions, so most of the value of a customer comes after the first sale. Customer Success exists to make sure customers get measurable value from Spoonful, renew their subscriptions, and expand their use over time. This document sets out how we segment customers, how we measure customer health, how we respond to churn risk, and the targets we are held to.
+
+## Definitions
+
+- Churn: A customer is considered churned on the date their subscription ends without renewal. In our reporting systems this is recorded as the customer's churn date. Customers with no churn date are active.
+- Churn rate: The number of customers who churned during a period divided by the number of customers active at the start of that period.
+- Satisfaction score: The customer's most recent satisfaction rating, on a scale of 1 to 10, collected through quarterly surveys and post-support surveys.
+
+## Customer segments
+
+Customers are segmented by the plan they purchased and their annual contract value.
+
+- Enterprise (Spoonful Enterprise plan): Assigned a named Customer Success Manager (CSM) with a maximum of 15 accounts per CSM. Quarterly business reviews (QBRs) with executive sponsors.
+- Mid-market (Spoonful Pro plan): Assigned a named CSM with a maximum of 50 accounts per CSM. Twice-yearly business reviews.
+- Self-serve (Spoonful Starter plan): Supported by the pooled digital success team through in-app guidance, webinars, and automated email programmes.
+
+## The customer journey
+
+1. Onboarding (days 0 to 90): Every new customer receives an onboarding plan with agreed success criteria. The onboarding is complete when the customer has connected at least one data source, created their first dashboard, and has at least 3 active users. Customers who have not completed onboarding by day 60 are flagged for intervention.
+2. Adoption: CSMs track weekly active users, number of dashboards, and use of key features against the customer's plan.
+3. Renewal: Renewal conversations start 120 days before the contract end date for Enterprise customers and 90 days before for Mid-market customers.
+4. Expansion: CSMs identify opportunities for additional seats, plan upgrades, and the Data Connect add-on, and pass qualified opportunities to Sales.
+
+## Customer health score
+
+Each account has a health score from 0 to 100, recalculated weekly from:
+
+- Product usage compared with the plan (35%)
+- Satisfaction score (25%)
+- Support complaint volume and priority over the last 90 days (20%)
+- Executive engagement (10%)
+- Payment history (10%)
+
+Accounts scoring 70 or above are "healthy", 50 to 69 are "needs attention", and below 50 are "at risk".
+
+## Churn risk signals and save plans
+
+An account is automatically flagged "at risk" if any of the following occur:
+
+- Satisfaction score below 6 out of 10
+- Weekly active users drop by more than 30% over 4 weeks
+- Two or more P1 or P2 complaints in 90 days
+- The executive sponsor leaves the customer's company
+- Late payment of more than 30 days
+
+When an account is flagged at risk, the CSM must create a written save plan within 5 business days. The save plan names the root cause, the actions Spoonful will take, an owner and a date for each action, and the success measure. Save plans for Enterprise customers are reviewed weekly by the VP of Customer Success. Any complaint from an at-risk customer is handled at priority P2 or higher, as set out in the Customer Complaint Handling Procedure.
+
+## Industry focus
+
+Our analysis of 2024 cancellations found that churn was highest among Retail and Education customers, mainly because of seasonal budgets and low adoption after onboarding. For these industries we will:
+
+- Offer annual billing aligned with the customer's budget cycle.
+- Run an additional adoption check-in at day 120.
+- Provide industry-specific dashboard templates.
+
+Healthcare and Finance customers have the lowest churn but the longest onboarding, typically because of security reviews. CSMs should involve the Security team early to provide our security documentation.
+
+## Targets
+
+Customer Success is measured against the following company targets:
+
+- Annual gross customer churn rate below 8%.
+- Average customer satisfaction score of 8.0 or higher out of 10.
+- 90% of new customers complete onboarding within 90 days.
+- Net revenue retention of 110% or higher.
+- Every at-risk Enterprise account has an active save plan.
+
+Progress against these targets is reported to the executive team monthly and to the board quarterly. If annual churn exceeds 10%, the VP of Customer Success must present a recovery plan to the executive team, which may include changes to pricing, discount policy, onboarding, or support policies.

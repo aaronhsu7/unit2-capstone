@@ -1,0 +1,75 @@
+# Spoonful Information Security Policy
+
+Policy ID: SEC-001
+Owner: Chief Information Security Officer (CISO)
+Applies to: All employees, contractors, and third parties with access to Spoonful systems
+Last reviewed: March 2025 (reviewed annually)
+
+## About this policy
+
+This policy describes how Spoonful protects company and customer data. It sets the minimum security requirements that every person with access to Spoonful systems must follow. Team-specific standards (for example, the Code Review Process and the Incident Response Runbook) build on this policy and may add stricter requirements, but they may never relax it.
+
+Violations of this policy may result in loss of system access and disciplinary action up to and including termination of employment or contract.
+
+## Data classification
+
+All Spoonful data falls into one of four classification levels. The owner of a dataset is responsible for labelling it.
+
+1. Public: Information approved for public release, such as marketing pages and published documentation.
+2. Internal: Information intended for Spoonful staff only, such as internal wikis and meeting notes. This is the default level if no label is applied.
+3. Confidential: Business-sensitive information, such as financial results, sales pipeline data, employee records, and source code.
+4. Restricted: Customer data, authentication secrets, encryption keys, and payment information. Restricted data has the strictest handling rules.
+
+Restricted data must never be copied to personal devices, pasted into unapproved third-party tools (including public AI chat tools), or shared over chat. It may only be stored in systems approved by the Security team.
+
+## Access control
+
+Access to Spoonful systems follows the principle of least privilege: you receive only the access you need to do your job.
+
+- Access requests are submitted through the IT service portal and must be approved by your manager and the system owner.
+- Access to production systems and to Restricted data requires an additional approval from the Security team.
+- Managers review their team's access every quarter. Access that is no longer needed must be removed within 5 business days of the review.
+- When an employee leaves Spoonful, all access is revoked within 24 hours of their last working day. For involuntary departures, access is revoked immediately.
+- Shared accounts are not permitted, except for documented service accounts owned by a named team.
+
+## Authentication and passwords
+
+- Multi-factor authentication (MFA) is mandatory for all company systems, including email, source control, cloud consoles, and the VPN. Hardware security keys are required for administrators.
+- Passwords must be at least 14 characters long. Passphrases are encouraged.
+- Passwords must be stored in the company-approved password manager. Do not reuse your Spoonful password on any other site.
+- Passwords are not rotated on a fixed schedule, but must be changed immediately if there is any suspicion of compromise.
+- API keys, tokens, and other secrets must be stored in the secrets manager. Secrets must never be committed to source control. Pre-commit secret scanning is enabled on all repositories, and a detected secret is treated as a security incident.
+
+## Devices
+
+- Company laptops must use full-disk encryption, automatic screen lock after 5 minutes of inactivity, and the endpoint protection agent installed by IT.
+- Operating system security updates must be installed within 14 days of release. Critical updates must be installed within 72 hours.
+- Personal devices may access email and chat through the managed mobile app only. Personal devices may not access source code, production systems, or Restricted data.
+- Lost or stolen devices must be reported to security@spoonful.example within 1 hour of discovery so they can be remotely wiped.
+
+## Network and remote work
+
+- Access to internal systems from outside the office requires the company VPN or the zero-trust access gateway.
+- Public Wi-Fi may be used only while connected to the VPN.
+- Do not discuss Confidential or Restricted information in public places where you can be overheard.
+
+## Third-party vendors
+
+Before any vendor receives Confidential or Restricted data, the Security team must complete a vendor risk assessment. Vendors handling Restricted data must hold a current SOC 2 Type II report or ISO 27001 certification, and must sign Spoonful's data processing agreement. Vendor assessments are renewed every year.
+
+## Reporting security incidents
+
+If you suspect a security incident, report it immediately. You will never be penalised for reporting in good faith, even if it turns out to be a false alarm.
+
+- Report through the #security-incidents channel or by emailing security@spoonful.example.
+- Suspected incidents must be reported within 1 hour of discovery.
+- Do not attempt to investigate or fix the issue yourself, and do not delete evidence such as suspicious emails.
+- The handling of incidents after they are reported is described in the Incident Response Runbook.
+
+## Security training
+
+All staff must complete security awareness training within 14 days of joining Spoonful and again every year. Engineers must also complete secure coding training annually. The Security team runs a phishing simulation every quarter; staff who fail a simulation are assigned a short refresher module.
+
+## Exceptions
+
+Exceptions to this policy must be requested in writing from the Security team, must include a business justification and compensating controls, and are approved by the CISO. Exceptions are granted for a maximum of 6 months and must then be renewed or closed.

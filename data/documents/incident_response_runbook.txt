@@ -1,0 +1,70 @@
+# Spoonful Incident Response Runbook
+
+Owner: Head of Site Reliability Engineering (SRE)
+Applies to: Engineering, SRE, Security, Customer Support, and incident commanders
+Last reviewed: May 2025
+
+## About this runbook
+
+An incident is any unplanned event that disrupts or degrades the Spoonful service, or puts customer data at risk. This runbook explains how incidents are classified, who is involved, how to communicate during an incident, and what happens afterwards. Security incidents follow this runbook together with the reporting rules in the Information Security Policy.
+
+## Severity levels
+
+- SEV1: The Spoonful service is down for all or most customers, or customer data has been exposed or lost. Response begins immediately, 24 hours a day.
+- SEV2: A major feature is unavailable or significantly degraded for many customers, or a security vulnerability is being actively exploited. Response within 15 minutes, 24 hours a day.
+- SEV3: A non-critical feature is degraded, or a small number of customers are affected and a workaround exists. Response within 4 business hours.
+- SEV4: A minor issue with no immediate customer impact. Handled through the normal ticket queue.
+
+If you are unsure of the severity, choose the higher one. It is easier to downgrade an incident than to recover from a slow response.
+
+## Roles
+
+- Incident Commander (IC): Coordinates the response, makes decisions, and assigns tasks. The IC does not debug. The on-call SRE is the default IC until they hand over.
+- Technical Lead: Leads the investigation and fix.
+- Communications Lead: Posts internal updates and, for SEV1 and SEV2, updates the public status page and works with Customer Support on customer messages.
+- Scribe: Keeps a timeline of events, decisions, and actions in the incident document.
+
+For SEV3 and SEV4 incidents, one person may hold several roles.
+
+## Declaring an incident
+
+1. Anyone can declare an incident by typing `/incident declare` in chat. This creates an incident channel, an incident document, and pages the on-call SRE.
+2. Choose the initial severity and write one sentence describing the customer impact.
+3. The on-call SRE acknowledges the page within 5 minutes and becomes Incident Commander.
+4. For SEV1, the IC also pages the Engineering manager on call and notifies the VP of Engineering.
+5. If the incident may involve a security breach or exposed customer data, the IC pages the Security on-call engineer immediately.
+
+## During the incident
+
+- The first priority is to restore service, not to find the root cause. Prefer rollbacks, feature flag changes, and failovers over new code.
+- Hotfixes may be merged using the expedited process described in the Code Review Process.
+- The Communications Lead posts internal updates every 30 minutes for SEV1 and every 60 minutes for SEV2, even if there is no news.
+- For SEV1 and SEV2, the public status page is updated within 15 minutes of declaring the incident, and then at least every hour.
+- Customer Support links any related customer complaints to the incident so customers can be notified when it is resolved.
+- Do not share details of a security incident outside the incident channel without approval from the Security team.
+
+## Resolving the incident
+
+An incident is resolved when customer impact has ended and the service has been stable for at least 30 minutes. The IC announces the resolution in the incident channel, the status page is updated, and Customer Support notifies affected customers.
+
+## After the incident
+
+- A blameless postmortem is required for every SEV1 and SEV2 incident, and is recommended for SEV3.
+- The postmortem draft is due within 5 business days and is reviewed at the weekly reliability review.
+- The postmortem includes a timeline, customer impact, root cause, what went well, what went badly, and action items with owners and due dates.
+- Action items from SEV1 postmortems must be completed within 30 days, and from SEV2 postmortems within 60 days.
+- For incidents that caused customers to lose service, Customer Success decides whether to offer service credits in line with the Customer Complaint Handling Procedure.
+
+## On-call
+
+- On-call rotations last one week and change over on Mondays at 10:00 local time.
+- Each rotation has a primary and secondary on-call engineer. If the primary does not acknowledge a page within 5 minutes, the secondary is paged automatically.
+- On-call engineers must be able to respond from a laptop within 15 minutes.
+- On-call compensation and time off in lieu follow the Employee Engagement and Wellbeing Policy.
+
+## Reliability targets
+
+- 99.9% monthly uptime for the core platform (the commitment in Enterprise contracts).
+- Median time to acknowledge a SEV1 or SEV2 page under 5 minutes.
+- Median time to resolve SEV1 incidents under 2 hours.
+- No more than 2 SEV1 incidents per quarter.

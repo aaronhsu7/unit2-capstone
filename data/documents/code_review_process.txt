@@ -1,0 +1,88 @@
+# Spoonful Code Review Process
+
+Owner: VP of Engineering
+Applies to: All repositories in the Spoonful GitHub organization
+Last reviewed: January 2025
+
+## About code review
+
+Every change to Spoonful code is reviewed by at least one other engineer before it is merged. Code review helps us catch bugs early, share knowledge across the team, and keep our codebase consistent and secure. Review is a conversation between peers, not a gate controlled by seniority.
+
+This document explains how to open a pull request, how reviews are assigned, what reviewers check, and how changes are merged.
+
+## Before you open a pull request
+
+1. Create a branch from `main` using the naming convention `<type>/<ticket-id>-<short-description>`, for example `fix/SPN-1423-null-invoice-total`.
+2. Keep the change focused on one purpose. Pull requests should aim for fewer than 400 changed lines, excluding generated files and lockfiles. Larger changes should be split into a series of smaller pull requests.
+3. Run the test suite and linters locally.
+4. Write or update tests for any behavior you change. New code must not reduce the repository's test coverage.
+
+## Opening a pull request
+
+Every pull request must use the repository's pull request template and include:
+
+- A summary of what changed and why.
+- A link to the ticket in the issue tracker.
+- How the change was tested.
+- Screenshots or recordings for any user-facing change.
+- Any follow-up work that is intentionally left out.
+
+Open the pull request as a draft if you want early feedback. Mark it "Ready for review" only when continuous integration (CI) is passing.
+
+## Who reviews
+
+Reviewers are assigned automatically using the CODEOWNERS file in each repository.
+
+- Standard changes require 1 approval from a code owner of the affected files.
+- Changes to security-sensitive areas require 2 approvals, one of which must come from the Security Champions group. Security-sensitive areas include authentication, authorization, payments, encryption, and anything that handles Restricted data as defined in the Information Security Policy.
+- Database migrations require approval from a member of the Data Platform team.
+- Authors may not approve their own pull requests, and approvals from people who co-authored commits on the branch do not count.
+
+## Review turnaround
+
+Reviewers should give a first response within 1 business day of being assigned. If you cannot review in time, reassign the review or tell the author when you will get to it. Pull requests that have had no response for 2 business days may be escalated to the team's engineering manager.
+
+## What reviewers check
+
+Reviewers use the following checklist. Not every item applies to every change.
+
+1. Correctness: Does the code do what the description says? Are edge cases and error paths handled?
+2. Tests: Are the tests meaningful, and would they fail if the change were broken?
+3. Security: Is user input validated? Are secrets kept out of the code? Are queries parameterised to prevent SQL injection? Is access checked on every new endpoint?
+4. Readability: Are names clear? Would a new team member understand the code without the author explaining it?
+5. Design: Does the change fit existing patterns, or does it introduce an unnecessary new one?
+6. Performance: Are there unbounded loops, N+1 queries, or large allocations on hot paths?
+7. Observability: Are important events logged, without logging personal or Restricted data?
+8. Documentation: Are READMEs, API docs, and runbooks updated where needed?
+
+## Giving and receiving feedback
+
+- Comment on the code, not the person.
+- Prefix optional suggestions with "nit:" so the author knows they are not blocking.
+- Explain why you are asking for a change, and link to documentation where possible.
+- Use "Request changes" only for issues that must be fixed before merging.
+- Authors should respond to every comment, either by making the change or by explaining why not. The reviewer resolves the conversation, not the author.
+
+## Merging
+
+A pull request can be merged when all of the following are true:
+
+- The required number of approvals has been given.
+- All CI checks pass, including tests, linting, and secret scanning.
+- All blocking conversations are resolved.
+- The branch is up to date with `main`.
+
+We use squash merging so each pull request becomes a single commit on `main`. The squashed commit message should describe the change in the imperative mood, for example "Fix null invoice total for trial accounts". Branches are deleted automatically after merging. Branch protection rules on `main` prevent direct pushes, including by administrators.
+
+## Hotfixes
+
+During a SEV1 or SEV2 incident (see the Incident Response Runbook), a hotfix may be merged with 1 approval from any senior engineer, even in security-sensitive areas. A full retrospective review of the hotfix must be completed within 2 business days, and any follow-up changes go through the normal process.
+
+## Measuring the process
+
+Engineering leadership reviews these metrics monthly:
+
+- Median time to first review (target: under 4 working hours).
+- Median time from "Ready for review" to merge (target: under 1 business day).
+- Percentage of pull requests over 400 lines (target: under 15%).
+- Number of production incidents traced to changes that passed review.

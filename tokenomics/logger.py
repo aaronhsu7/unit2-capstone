@@ -1,9 +1,26 @@
 # tokenomics/logger.py
 import json
 from datetime import datetime
+from pathlib import Path
 
-COST_PER_1K_INPUT  = 0.003   # Update to current Claude pricing
-COST_PER_1K_OUTPUT = 0.015
+LOG_PATH = Path(__file__).parent.parent / "tokenomics_log.jsonl"
+
+# gemini-3.5-flash-lite, standard paid tier (checked 2026-10-08):
+# $0.30 per 1M input tokens, $2.50 per 1M output tokens (thinking tokens included).
+# Source: https://ai.google.dev/gemini-api/docs/pricing
+COST_PER_1K_INPUT  = 0.0003
+COST_PER_1K_OUTPUT = 0.0025
+
+def token_counts(response) -> tuple[int, int]:
+    """Return (input_tokens, output_tokens) from a Gemini response.
+
+    Gemini reports "thinking" tokens separately from the visible answer, but both
+    are billed as output, so they are added together here.
+    """
+    usage = response.usage_metadata
+    input_tokens = usage.prompt_token_count or 0
+    output_tokens = (usage.candidates_token_count or 0) + (usage.thoughts_token_count or 0)
+    return input_tokens, output_tokens
 
 def log(query: str, agent: str, input_tokens: int, output_tokens: int):
     input_cost  = (input_tokens  / 1000) * COST_PER_1K_INPUT
@@ -22,7 +39,7 @@ def log(query: str, agent: str, input_tokens: int, output_tokens: int):
 
     print(f"\n[TOKENOMICS] Agent: {agent} | Input: {input_tokens} | Output: {output_tokens} | Cost: ${total_cost:.6f}")
 
-    with open("tokenomics_log.jsonl", "a") as f:
+    with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry) + "\n")
 
     return entry

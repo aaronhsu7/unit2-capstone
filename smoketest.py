@@ -2,11 +2,12 @@
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from config import MODEL
 load_dotenv()
  
 client = genai.Client()  # reads GEMINI_API_KEY from your .env
 response = client.models.generate_content(
-    model="gemini-3.5-flash",
+    model=MODEL,
     contents="Say hello in one sentence.",
     config=types.GenerateContentConfig(max_output_tokens=250),
 )

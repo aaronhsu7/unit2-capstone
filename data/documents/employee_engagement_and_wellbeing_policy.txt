@@ -1,0 +1,76 @@
+# Spoonful Employee Engagement and Wellbeing Policy
+
+Owner: Chief People Officer
+Applies to: All Spoonful employees
+Last reviewed: April 2025
+
+## Purpose
+
+Engaged, healthy employees build better products and serve customers better. This policy describes how Spoonful measures employee satisfaction, how we compare ourselves with the industry, and the programmes and policies designed to support engagement and wellbeing.
+
+## Measuring employee satisfaction
+
+Spoonful runs an anonymous engagement survey twice a year, in March and September. Each employee gives an overall satisfaction score from 1 (very dissatisfied) to 10 (very satisfied) and answers questions about their manager, workload, growth opportunities, compensation, and belonging.
+
+- Results are only reported for groups of 5 or more people to protect anonymity.
+- Department heads receive their department's results within 3 weeks of the survey closing.
+- Each department must share an action plan with their team within 6 weeks of receiving results.
+
+The People team also tracks voluntary attrition, average tenure, and internal promotion rates alongside survey results.
+
+## Industry benchmarks
+
+We compare our results against external benchmarks for mid-sized software companies (500 to 2,000 employees). The benchmarks used for fiscal year 2025 are:
+
+- Average employee satisfaction score: 7.1 out of 10
+- Top-quartile employee satisfaction score: 7.8 out of 10
+- Average voluntary attrition rate: 13% per year
+- Average employee tenure: 3.2 years
+
+Spoonful's goal is to reach an average satisfaction score of 7.5, above the industry average, by the end of fiscal year 2026, and to keep voluntary attrition below 11%.
+
+## Department thresholds
+
+If a department's average satisfaction score falls below 6.5, the following apply:
+
+1. The department head meets with the Chief People Officer within 4 weeks to review the results.
+2. The People team runs listening sessions with the department to identify causes.
+3. The department's action plan is reviewed by the executive team, and progress is checked again at the next survey.
+
+Departments with a score below 6.0 for two surveys in a row are prioritised for additional headcount review, workload analysis, and manager coaching.
+
+Customer-facing teams, particularly Customer Support, have historically scored lower than other departments, and the main reasons given are high ticket volume, after-hours on-call duties, and limited career paths. The Support-specific measures below respond to this feedback.
+
+## Working arrangements
+
+- Hybrid working: Employees may work remotely up to 3 days per week. Fully remote arrangements can be approved by a department head.
+- Core hours: Meetings should be scheduled between 10:00 and 15:00 local time where possible. Employees may otherwise set their own schedule.
+- Meeting-free Wednesdays: No internal recurring meetings are scheduled on Wednesdays.
+
+## Time off and wellbeing
+
+- 25 days of paid annual leave plus local public holidays. Employees are expected to take at least 15 days each year, and managers are prompted if an employee has taken fewer than 10 days by October.
+- 4 wellbeing days per year that can be taken at short notice without a reason.
+- 16 weeks of fully paid parental leave for all parents.
+- Access to a confidential employee assistance programme, including up to 8 free counselling sessions per year.
+- A monthly wellbeing allowance of $50 that can be used for fitness, mental health apps, or similar.
+
+## On-call and Support workload
+
+- On-call rotations must include at least 6 people so no employee is on call more than one week in six.
+- Employees receive a day off in lieu after any on-call week in which they were paged outside working hours more than 3 times.
+- Customer Support agents have a target of no more than 35 tickets resolved per day, and team leads must review staffing if the average exceeds this for 2 consecutive weeks.
+- Customer Support agents spend 10% of their time on training or project work, outside ticket queues.
+
+## Growth and recognition
+
+- Each employee has a learning and development budget of $1,500 per year.
+- Promotions are reviewed twice a year, in April and October.
+- Every role has a published career ladder. Customer Support has a career ladder with paths into Customer Success, Support Engineering, and team leadership.
+- Peer recognition awards are announced at the monthly all-hands meeting.
+
+## Responsibilities
+
+- Managers hold a 1:1 meeting with each direct report at least every two weeks, including a quarterly conversation about career growth and workload.
+- The People team reports survey results, attrition, and benchmark comparisons to the executive team after every survey.
+- Employees are encouraged to raise concerns with their manager, the People team, or through the anonymous feedback form at any time.
