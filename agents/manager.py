@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 from config import MODEL
 from agents import qualitative, quantitative
 from validation.validator import validate_qualitative, validate_quantitative, validate_synthesis
-from tokenomics.logger import log, token_counts
+from validation.reviewer import review_answer, format_issues
+from tokenomics.logger import log, token_counts, set_current_query
 load_dotenv()
 
 client = genai.Client()  # reads GEMINI_API_KEY from .env
@@ -76,6 +77,22 @@ def print_rows(cols: list, rows: list, limit: int = 50):
             print("  " + "  ".join("-" * w for w in widths))
     if len(rows) > limit:
         print(f"  ... {len(rows) - limit} more rows not shown")
+
+def review_document_answer(query: str, qual_result: dict, check: dict, label: str = "") -> dict | None:
+    """Second validation strategy: a reviewer call checks the answer against its sources.
+
+    Skipped for refusals and empty answers, which make no claims to check.
+    """
+    if check["refused_to_answer"] or not qual_result["answer"].strip():
+        return None
+    review = review_answer(query, qual_result["answer"], qual_result["chunks"])
+    if review["warning"]:
+        print(f"\n⚠️  VALIDATION WARNING{label}: {review['warning']}")
+        if review["issues"]:
+            print(format_issues(review["issues"]))
+    else:
+        print(f"\nReviewer{label}: every claim is supported by the source it cites.")
+    return review
 
 def split_question(query: str) -> dict:
     """Split a "both" question into a data part and a document part."""
@@ -188,6 +205,9 @@ def run_both(query: str):
     for label, check in [("Document agent", qual_check), ("Data agent", quant_check)]:
         if check["flag"]:
             print(f"\n⚠️  VALIDATION WARNING ({label}): {check['warning']}")
+    # The document half is reviewed before synthesis, so unsupported claims are
+    # reported even if the combined answer reads well.
+    review_document_answer(parts["document_question"], qual_result, qual_check, " (Document agent)")
 
     try:
         combined = synthesize(query, parts, qual_result, quant_result)
@@ -197,7 +217,7 @@ def run_both(query: str):
         print(f"\n[Qualitative]\n{qual_result['answer']}")
         print(f"\nSQL used: {quant_result['sql']}")
         print_rows(quant_result.get("columns", []), quant_result["rows"])
-        return
+        return qual_result["answer"]
 
     check = validate_synthesis(
         combined["answer"], qual_result["chunks"],
@@ -214,15 +234,88 @@ def run_both(query: str):
         print(f"  [Source {i}] {chunk['source']} (chunk {chunk['chunk']})")
     print(f"\nSQL used: {quant_result['sql']}")
     print_rows(quant_result.get("columns", []), quant_result["rows"])
+    return combined["answer"]
 
-def run(query: str):
+# Conversation history (Silver stretch goal)
+# Only the most recent turns are used, and answers are shortened, so the rewrite
+# prompt stays small however long the session runs.
+HISTORY_TURNS = 3
+HISTORY_ANSWER_CHARS = 500
+
+def format_history(history: list) -> str:
+    lines = []
+    for i, turn in enumerate(history[-HISTORY_TURNS:], start=1):
+        answer = turn["answer"].strip().replace("\n", " ")
+        if len(answer) > HISTORY_ANSWER_CHARS:
+            answer = answer[:HISTORY_ANSWER_CHARS] + "..."
+        lines.append(f"Q{i}: {turn['standalone']}")
+        if turn.get("sql"):
+            lines.append(f"SQL{i}: {turn['sql']}")
+        lines.append(f"A{i}: {answer}")
+    return "\n".join(lines)
+
+def rewrite_followup(query: str, history: list) -> str:
+    """Rewrite a follow-up question so it can be understood on its own."""
+    # Prompt design decisions:
+    # - Why rewrite instead of passing history to every agent: retrieval embeds
+    #   the question, and "what about 2024?" matches nothing in the documents;
+    #   the SQL writer can't resolve "that" either. One small rewrite call lets
+    #   every downstream step (classifier, agents, validators) work unchanged.
+    # - Previous questions are the rewritten (standalone) versions, so a chain
+    #   of follow-ups doesn't compound ambiguity.
+    # - The previous SQL is included for data turns, so "break that down by
+    #   region" can reuse the same filters and measures.
+    # - "Including any figures it depends on": a follow-up like "is that above
+    #   the target?" needs the number from the previous answer to be answerable.
+    # - "Return it unchanged" if already standalone: a new topic mid-session
+    #   must not be dragged back to the previous one.
+    # - "Do not answer the question": the rewrite must not leak an answer that
+    #   would skip retrieval, SQL and validation.
+    # - Token cost: history is capped at HISTORY_TURNS turns with answers cut
+    #   to HISTORY_ANSWER_CHARS, and this call only runs when there is history.
+    prompt = f"""You are helping a question-answering system follow a conversation.
+
+Previous conversation (most recent last):
+{format_history(history)}
+
+Follow-up question: {query}
+
+Rewrite the follow-up as a standalone question that can be understood without the conversation. Replace words like "that", "it", "those" or "what about" with what they refer to, including any figures from the previous answers that the question depends on. If the follow-up is already a standalone question, return it unchanged. Do not answer the question.
+Reply with only the rewritten question."""
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(max_output_tokens=256)
+        )
+        log(query, "manager-rewrite", *token_counts(response))
+        rewritten = (response.text or "").strip().strip('"')
+        if rewritten:
+            return rewritten
+    except genai_errors.APIError:
+        pass
+    print("\n⚠️  Could not interpret the follow-up using the conversation; using the question as typed.")
+    return query
+
+def run(query: str, history: list | None = None) -> dict:
+    """Answer one question. Returns the turn, so the caller can keep history."""
+    set_current_query(query)
     print(f"\nQuery: {query}")
-    route = classify(query)
+    standalone = query
+    if history:
+        standalone = rewrite_followup(query, history)
+        if standalone != query:
+            # Shown so the user can see (and verify) how the follow-up was read.
+            print(f"Interpreted as: {standalone}")
+
+    route = classify(standalone)
     print(f"Route: {route}")
+    turn = {"query": query, "standalone": standalone, "route": route, "answer": "", "sql": None}
 
     if route == "both":
-        run_both(query)
-        return
+        turn["answer"] = run_both(standalone)
+        return turn
+    query = standalone
 
     if route == "qualitative":
         qual_result = qualitative.run(query)
@@ -230,7 +323,9 @@ def run(query: str):
                                           qual_result.get("truncated", False))
         if validation["flag"]:
             print(f"\n⚠️  VALIDATION WARNING: {validation['warning']}")
+        review_document_answer(query, qual_result, validation)
         print(f"\n[Qualitative]\n{qual_result['answer']}")
+        turn["answer"] = qual_result["answer"]
 
     if route == "quantitative":
         quant_result = quantitative.run(query)
@@ -244,3 +339,7 @@ def run(query: str):
         print(f"\n[Quantitative]\n{quant_result['answer']}")
         print(f"SQL used: {quant_result['sql']}")
         print_rows(quant_result.get("columns", []), quant_result["rows"])
+        turn["answer"] = quant_result["answer"]
+        turn["sql"] = quant_result["sql"]
+
+    return turn

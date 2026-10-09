@@ -22,6 +22,17 @@ def token_counts(response) -> tuple[int, int]:
     output_tokens = (usage.candidates_token_count or 0) + (usage.thoughts_token_count or 0)
     return input_tokens, output_tokens
 
+# The question the user typed for the current turn. The manager sets it at the
+# start of each turn, so every Gemini call in that turn is logged under the same
+# question, even when an agent is working on a split sub-question or a
+# rewritten follow-up. Without this, one "both" question was logged under three
+# different query strings and the report's cost-per-query was wrong.
+_current_query = None
+
+def set_current_query(query):
+    global _current_query
+    _current_query = query
+
 def log(query: str, agent: str, input_tokens: int, output_tokens: int):
     input_cost  = (input_tokens  / 1000) * COST_PER_1K_INPUT
     output_cost = (output_tokens / 1000) * COST_PER_1K_OUTPUT
@@ -29,13 +40,16 @@ def log(query: str, agent: str, input_tokens: int, output_tokens: int):
 
     entry = {
         "timestamp": datetime.now().isoformat(),
-        "query": query,
+        "query": _current_query or query,
         "agent": agent,
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
         "cost_usd": round(total_cost, 6),
         "cost_per_1000_queries": round(total_cost * 1000, 2)
     }
+    # Keep the question this call actually worked on, when it differs.
+    if _current_query and query != _current_query:
+        entry["sub_query"] = query
 
     print(f"\n[TOKENOMICS] Agent: {agent} | Input: {input_tokens} | Output: {output_tokens} | Cost: ${total_cost:.6f}")
 

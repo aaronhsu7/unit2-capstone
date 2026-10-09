@@ -7,7 +7,7 @@ It uses Google Gemini (`gemini-3.5-flash-lite`) for every model call, ChromaDB f
 ## Architecture
 
 ```
-User question  (python main.py)
+User question CLI (python main.py)
       │
       ▼
 ┌──────────────────────────────────────────────────────────┐
@@ -67,30 +67,36 @@ User question  (python main.py)
 
 ```
 unit-2-capstone/
-├── main.py                  # CLI entry point
-├── config.py                # Gemini model name (from .env)
+├── main.py                    # CLI entry point (keeps conversation history)
+├── config.py                  # Gemini model name (from .env)
 ├── agents/
-│   ├── manager.py           # classify, split, synthesise, print results
-│   ├── qualitative.py       # ChromaDB retrieval + grounded answer
-│   └── quantitative.py      # NL → SQL, validate_sql, read-only execution
+│   ├── manager.py             # rewrite follow-ups, classify, split, synthesise, print results
+│   ├── qualitative.py         # ChromaDB retrieval + grounded answer
+│   └── quantitative.py        # NL → SQL, validate_sql, read-only execution
 ├── validation/
-│   └── validator.py         # validators for answers, SQL and combined answers
+│   ├── validator.py           # validators for answers, SQL and combined answers
+│   └── reviewer.py            # second Gemini call that checks answers against their sources
 ├── tokenomics/
-│   ├── logger.py            # per-call token and cost logging
-│   └── report.py            # summary of tokenomics_log.jsonl
+│   ├── logger.py              # per-call token and cost logging
+│   ├── report.py              # summary of tokenomics_log.jsonl
+│   ├── chunking_experiment.py # compare chunk size / top_k settings (no Gemini calls)
+│   └── topk_comparison.py     # compare answers with top_k 5 vs 3
 ├── data/
-│   ├── documents/           # 7 policy documents (fictional)
-│   ├── database.sqlite      # sales, customers, employees (fictional)
-│   └── chroma/              # vector index, built by ingest.py (not committed)
-├── ingest.py                # chunk + embed documents into ChromaDB
-├── seed_db.py               # (re)generate the SQLite database
-├── smoketest.py             # confirm the Gemini API key works
-├── check_retrieval.py       # test: search returns the right documents
-├── check_sql.py             # test: generated SQL gives correct results
-├── check_validation.py      # test: the validation layer catches bad output
-├── setup.sh                 # optional: create venv and install packages
+│   ├── documents/             # 7 policy documents (fictional)
+│   ├── database.sqlite        # sales, customers, employees (fictional)
+│   └── chroma/                # vector index, built by ingest.py (not committed)
+├── ingest.py                  # chunk + embed documents into ChromaDB
+├── seed_db.py                 # (re)generate the SQLite database
+├── smoketest.py               # confirm the Gemini API key works
+├── check_retrieval.py         # test: search returns the right documents
+├── check_sql.py               # test: generated SQL gives correct results
+├── check_validation.py        # test: the validation layer catches bad output
+├── check_history.py           # test: follow-up questions are rewritten correctly
+├── check_reviewer.py          # test: the reviewer catches answers with known errors
+├── setup.sh                   # optional: create venv and install packages
 ├── requirements.txt
-└── tokenomics_log.jsonl     # token usage from testing
+├── spec.md                    # assignment brief
+└── tokenomics_log.jsonl       # token usage from testing
 ```
 
 ## Setup
@@ -189,7 +195,7 @@ python -m tokenomics.report           # token usage and cost by agent
 
 ## Mock Data
 
-All data in this project is **fictional**. It describes *Spoonful*, an imaginary B2B SaaS analytics company, and was generated for testing this system. Any resemblance to real companies is coincidental.
+All data in this project is fictional. It describes *Spoonful*, an imaginary B2B SaaS analytics company, and was generated for testing this system. Any resemblance to real companies is coincidental.
 
 The documents and the database were written to agree with each other. Products, prices, regions, satisfaction scales and targets in the documents match the values in the database, so questions that need both document search and data analysis have real connections to find.
 
@@ -247,9 +253,7 @@ Real examples from testing, showing what the model returned, what the validation
 
 ### Example 1: SQL blocked because of markdown code fences
 
-**Context:** Testing the quantitative agent on its own with `check_sql.py`, before wiring it into the manager. The script asks 6 simple questions, compares the result of Gemini's SQL against a hand-written reference query, and reports PASS, MISMATCH, BLOCKED or ERROR. Model: `gemini-3.5-flash-lite`, 2026-10-08.
-
-**Query:** "How many employees are there?" (plus 5 other simple questions, such as total revenue, churned customer count and revenue by region in 2025)
+**Query:** "How many employees are there?"
 
 **What Gemini returned:** Correct SQL, but wrapped in a markdown code block every time, even though the prompt says "Return ONLY the SQL query, nothing else":
 
@@ -257,7 +261,7 @@ Real examples from testing, showing what the model returned, what the validation
 '```sql\nSELECT COUNT(*) FROM employees;\n```'
 ````
 
-**What the validation layer flagged:** `validate_sql` blocked all 6 queries with `Only SELECT queries are permitted`, because the text started with ```` ``` ```` instead of `SELECT`. Result: **0/6 correct**, and no query reached the database.
+**What the validation layer flagged:** `validate_sql` blocked all 6 queries with `Only SELECT queries are permitted`, because the text started with ```` ``` ```` instead of `SELECT`. Result: 0/6 correct, and no query reached the database.
 
 **What I accepted, what I changed, and why:**
 
@@ -265,7 +269,7 @@ Real examples from testing, showing what the model returned, what the validation
 - **Changed:** Added `strip_code_fences()` to `agents/quantitative.py`, which removes a code fence only when it wraps the *entire* reply. If Gemini adds any prose around the SQL (e.g. ``Here you go: ```sql ...``` ``), the text is left unchanged and the validator still blocks it.
 - **Why a code fix instead of a prompt fix:** The prompt already told the model not to add anything, and it did anyway. On the re-run, Gemini fenced some answers and not others, so the formatting is not consistent between calls. Handling it in code works regardless of what the model does.
 
-**Result after the fix:** **6/6 correct**, with every result matching the reference query:
+**Result after the fix:** 6/6 correct, with every result matching the reference query:
 
 ```
 How many employees are there?
@@ -278,8 +282,6 @@ What was the total revenue for each region in 2025?
 ```
 
 ### Example 2: Irrelevant context, and why refusals are now flagged
-
-**Context:** Testing the validation layer before wiring up the manager, using `check_validation.py`. To test what happens when retrieval returns the wrong documents, the qualitative agent was given **only the two code review chunks** and asked an HR question. Model: `gemini-3.5-flash-lite`, 2026-10-08.
 
 **Query:** "How many weeks of parental leave do employees get?" (the real answer, 16 weeks, is in the employee engagement policy, which was deliberately left out)
 
@@ -357,7 +359,7 @@ After the run, all tables still had their original row counts (sales 1,730, cust
 **What I accepted, what I changed, and why:**
 
 - **Accepted:** The blocking behaviour. This is the clearest case for trust-but-verify in the project: the model followed a malicious instruction, and the validator in code was the only control that held. Prompt wording alone cannot be relied on to stop this.
-- **Problem found in the validator itself:** Offline tests in `check_validation.py` showed the keyword check was too broad in the other direction. Because it matched keywords as plain substrings, it blocked safe queries:
+- **Problem found in the validator itself:** Tests in `check_validation.py` showed the keyword check was too broad in the other direction. Because it matched keywords as plain substrings, it blocked safe queries:
 
   ```
   [GAP] Column alias containing 'update': SELECT MAX(date) AS last_updated FROM sales
@@ -368,7 +370,7 @@ After the run, all tables still had their original row counts (sales 1,730, cust
         expected allow, got Only SELECT queries are permitted
   ```
 
-- **Changed:** I rewrote `validate_sql` in `agents/quantitative.py`:
+- **Changed:** I edited `validate_sql` in `agents/quantitative.py`:
   - Text inside quotes is blanked out before checking, so a value like `'%Dropship%'` is not read as `DROP`.
   - Keywords are matched as whole words, so `last_updated` no longer matches `UPDATE`.
   - Read-only `WITH ... SELECT` queries are allowed; a write hidden inside one is still caught by the keyword check.
@@ -389,7 +391,7 @@ After the run, all tables still had their original row counts (sales 1,730, cust
 
 ### Example 4: Qualitative - An answer I did not immediately trust
 
-**Context:** The first end-to-end document query through the CLI (`python main.py`), after the prompt improvements. Model: `gemini-3.5-flash-lite`, 2026-10-08.
+**Context:** The first end-to-end document query through the CLI (`python main.py`), after the prompt improvements. Model: `gemini-3.5-flash-lite`
 
 **Query:** "How do we handle customer complaints?"
 
@@ -421,8 +423,7 @@ cannot be met without closing the ticket without an outcome [Source 1].
 **What I found:**
 
 - **15 facts were correct and correctly cited**, including all four priority response times, the five resolution steps, the 1/3/7/15-day resolution targets, both escalation rules, and all three service-credit approval levels.
-- **One citation was wrong.** "Complaints from at-risk customers are handled at priority P2 or higher [Source 1, Source 3]": that rule is in Sources **2** and 3. Source 1 does not contain it. The fact is true, but the citation points to a chunk that does not support it.
-- **One step was garbled.** "explain why the request cannot be met without closing the ticket without an outcome" is a confusing double negative. The source says: "Never close a ticket without telling the customer the outcome."
+- **One citation was wrong.** "Complaints from at-risk customers are handled at priority P2 or higher [Source 1, Source 3]": that rule is in Sources 2 and 3. Source 1 does not contain it. The fact is true, but the citation points to a chunk that does not support it.
 - **The answer was incomplete.** It left out the root cause and learning process and the performance targets (e.g. 95% of complaints answered within target, satisfaction of 8.0 or higher), even though both were in Source 2.
 
 **What I accepted, what I changed, and why:**
@@ -430,7 +431,6 @@ cannot be met without closing the ticket without an outcome [Source 1].
 - **Accepted:** The facts themselves. All of them matched the source documents.
 - **Did not accept as complete:** For a "how do we handle..." question, missing the learning process and performance targets means the answer is not the full procedure. A user relying on it would not know the targets they are measured against.
 - **Changed, in the answer prompt (`agents/qualitative.py`):** Added one rule aimed at the omissions: *"When describing a rule or process, include the conditions, exceptions, deadlines and consequences attached to it in the context."* The same pattern (rules kept, their conditions dropped) also appeared in the code review and security policy answers, so this was a prompt problem rather than a one-off.
-- **Not changed, because a prompt can't fix it:** The wrong citation. The validator only checks that the text "Source N" is present, so it passed an answer with a wrong citation, garbled wording and missing sections. Catching a wrong citation needs a check that reads the cited chunk and confirms it supports the claim, such as a second model call acting as a reviewer. This is the main reason for choosing the reviewer as the Silver stretch goal.
 
 **Result after the change:** I re-ran the same query through the CLI and checked it the same way.
 
@@ -445,11 +445,9 @@ cannot be met without closing the ticket without an outcome [Source 1].
 | Garbled "without closing the ticket without an outcome" | Fixed: "never close a ticket without telling the customer the outcome" |
 | Root cause process missing | Fixed: "root cause analysis completed within 10 business days" |
 | Credits must be recorded on the ticket (not mentioned) | Added |
-| Monthly complaint report and performance targets missing | **Still missing**, although both are in Source 2 |
-| — | **New wrong citation:** the 5-business-day confirmation rule is cited `[Source 1, Source 2]`, but only Source 1 contains it |
+| Monthly complaint report and performance targets missing | Still missing, although both are in Source 2 |
 
-- **Accepted:** The new answer as more complete and more accurate than the first. Three of the four content problems were fixed.
-- **Not accepted as proof the citation problem is solved:** One wrong citation was fixed and a different one appeared. Citation accuracy varies from run to run, so the prompt cannot be relied on for it. This confirms the reviewer check is needed.
+- **Accepted:** The new answer as more complete and more accurate than the first.
 - **Cost of the change:** Output rose from 593 to 920 tokens (+55%) and the answer cost from $0.0024 to $0.0032 (+34%). A more complete answer is longer, and output is the expensive part of this call. I accepted this trade-off for policy questions, where a missing condition can mislead a user, but it's worth reviewing in the token-usage analysis.
 
 **Tokenomics note from the same query:**
@@ -464,8 +462,6 @@ cannot be met without closing the ticket without an outcome [Source 1].
 - Sources 4 and 5 (~1,000 words, about a third of the input) were not used in the answer, which suggests smaller chunks and a lower `top_k` could reduce input tokens without affecting quality.
 
 ### Example 5: Quantitative - Every number correct, but the question not answered
-
-**Context:** The first data question from the spec, run through the CLI (`python main.py`) on 2026-10-08 with `gemini-3.5-flash-lite`. This was also the first live test of the improved quantitative prompts (full schema with date formats, a 50-row limit with a "partial result" note, and a rule to use only the numbers in the results).
 
 **1. The query I submitted:** "Show me monthly revenue trends"
 
@@ -500,7 +496,7 @@ SQL used: SELECT strftime('%Y-%m', date) AS month, SUM(revenue) AS total_revenue
 **Why I didn't immediately trust it:** The answer looked authoritative, with precise figures for every month, but it was titled "trends" and contained no trend. I checked it in three steps:
 
 1. **The SQL:** It groups by `strftime('%Y-%m', date)`, i.e. by year *and* month, so it returns 24 rows. A common mistake is grouping by month alone, which would merge January 2024 with January 2025 into 12 rows. This one was correct.
-2. **The numbers:** I ran my own query against the database (`SELECT substr(date,1,7), SUM(revenue) FROM sales GROUP BY 1`) and compared all 24 values. **All 24 matched exactly.**
+2. **The numbers:** I ran my own query against the database (`SELECT substr(date,1,7), SUM(revenue) FROM sales GROUP BY 1`) and compared all 24 values. All 24 matched exactly.
 3. **Whether it answered the question:** It did not. A trend answer should say what the data shows. From the database, the answer should have mentioned:
 
    | Pattern in the data | Value |
@@ -515,20 +511,20 @@ SQL used: SELECT strftime('%Y-%m', date) AS month, SUM(revenue) AS total_revenue
 
 **Cause:** My own earlier prompt change. To stop the model adding outside claims, I had added *"Use only the numbers in these results. Do not add facts, benchmarks, causes or recommendations that are not in the data."* The model appears to have read this as "don't interpret at all" and copied the data back instead. A guardrail against one failure (invented claims) caused another (an answer that doesn't answer).
 
-**Tokenomics impact:** The interpretation call used **469 output tokens** just to retype 24 values the system already had, which was **85% of the cost of the whole query** ($0.001364 of $0.001613). Output tokens cost ~8× more than input, so repeating data is the most expensive thing this call can do.
+**Tokenomics impact:** The interpretation call used 469 output tokens just to retype 24 values the system already had, which was 85% of the cost of the whole query ($0.001364 of $0.001613). Output tokens cost ~8× more than input, so repeating data is the most expensive thing this call can do.
 
 **4. What I accepted, what I changed, and why:**
 
 - **Accepted:** The SQL and all 24 figures. Both were checked against the database and are correct.
-- **Not accepted:** The answer as a response to "trends". Correct data that doesn't answer the question is not a correct answer.
+- **Not accepted:** The answer as a response to "trends". It only provided correct data that doesn't fully answer the question
 - **Changed, in the interpretation prompt (`agents/quantitative.py`):** Added two rules and kept the existing grounding rule:
   - *"Describe the patterns in the data: for example the highest and lowest values, how values change over time, and any repeating or seasonal peaks. Quote only the figures needed to support each point."*
   - *"Do not list every row. The full results are shown to the user separately."*
-  - Kept: *"Use only the numbers in these results. Do not add facts, benchmarks, causes or recommendations that are not in the data."* Patterns found **in** the data are allowed; explanations from **outside** the data (e.g. "due to holiday spending") are still not.
+  - Kept: *"Use only the numbers in these results. Do not add facts, benchmarks, causes or recommendations that are not in the data."* Patterns found in the data are allowed; explanations from outside shouldn't be.
 - **Changed, in the CLI (`agents/manager.py`):** A new `print_rows()` function prints the query results as a table under every data answer. The user sees the exact figures without the model retyping them, and can check every number the explanation quotes.
-- **Why both changes:** The prompt change should make the answer useful *and* cut output tokens; the table makes sure no data is lost by asking the model to summarise instead of list.
+- **Why both changes:** The prompt change should make the answer useful and cut output tokens; the table makes sure no data is lost by asking the model to summarise instead of list.
 
-**Result after the change:** I re-ran the same query through the CLI. (One earlier re-run was interrupted by a Gemini 503 during the interpretation step; the new error handling reported it as "SQL ran, but Gemini was unavailable to explain the results" and still printed the 24-row table, so the data was not lost.)
+**Result after the change:** I re-ran the same query through the CLI.
 
 ```
 [TOKENOMICS] Agent: manager-classifier     | Input: 131 | Output: 1   | Cost: $0.000042
@@ -563,13 +559,6 @@ Results (24 rows):
 | Recurring autumn spikes | Oct–Nov are the top months in both years | ✅ |
 | Any cause or outside claim (e.g. "holiday spending") | None made | ✅ |
 
-**What it still misses:**
-
-- **No year-over-year comparison.** The most basic trend, that 2025 revenue ($16.41M) was 5.7% higher than 2024 ($15.52M), is not mentioned.
-- **The Q3 2025 dip is not mentioned** (Q3 2025, $3.46M, was below Q3 2024, $3.87M).
-- **December is left out of the "peak".** It describes an "autumn" spike in October–November, but December is also above every non-Q4 month in 2025. "Q4 is the peak quarter" would be the accurate summary.
-- **Number formatting is sloppy** ("$1,003,680.0").
-
 **Tokenomics, before and after:**
 
 | | Before | After | Change |
@@ -586,8 +575,6 @@ Results (24 rows):
 - **Lesson:** The first fix (a strict grounding rule) overcorrected and stopped the model interpreting at all. The second fix had to say both what to do ("describe the patterns") and what not to do ("don't add outside facts"). One rule on its own did not work.
 
 ### Example 6: Qualitative - A fix that cut the answer off
-
-**Context:** After adding the completeness rule from Example 4 (*"include the conditions, exceptions, deadlines and consequences attached to it"*), I re-ran the code review question to check that the hotfix safeguard now appeared.
 
 **1. The query I submitted:** "Explain the code review process"
 
@@ -609,8 +596,7 @@ Ask a question:
 
 **Why I didn't trust it:** The answer ends at `* **Deadline`, mid-word, which is exactly where the 2-day retrospective review (the safeguard I was testing for) would have appeared. The model *was* about to include it.
 
-**Cause:** The answer used **1,020 output tokens** against a `max_output_tokens` limit of **1,024**. The completeness rule made answers longer (this same question used 732 output tokens before the rule), and this one ran into the limit. Gemini stopped writing, and nothing in the system noticed. Like Example 5, a fix for one problem (missing conditions) caused another (a cut-off answer).
-
+**Cause:** The answer used 1,020 output tokens against a `max_output_tokens` limit of 1,024. The completeness rule made answers longer (this same question used 732 output tokens before the rule), and this one ran into the limit. Gemini stopped writing, and nothing in the system noticed.
 **4. What I accepted, what I changed, and why:**
 
 - **Not accepted:** The answer. A cut-off answer is incomplete in a way the user can't see unless they notice the last line.
@@ -635,15 +621,11 @@ Ask a question:
 | 2-day retrospective review after a hotfix (missing in the first test, cut off in the second) | ✅ Now included |
 | "Measuring the process" section (missing in the first test) | ✅ Now included |
 | Citations: retrospective review and process metrics cited to Source 2 | ✅ Both are in Source 2 (`code_review_process.txt` #1) |
-| Output tokens | 1,028, which **would have been cut off under the old 1,024 limit** |
+| Output tokens | 1,028, which would have been cut off under the old 1,024 limit |
 
 - **Accepted:** The new answer. It is the first version of this answer that includes the hotfix safeguard and the process metrics, and every citation I checked was correct.
-- **Cost:** $0.0033 for this answer, up from $0.0026 before the completeness rule. Across Examples 4 and 6, the completeness rule raised answer length by about 40–55%. That is the price of answers that don't drop conditions; whether it's worth it is part of the token-usage analysis.
-- **Lesson:** Every prompt change that affects answer length needs the output limit checked too, and limits should never fail silently.
 
 ### Example 7: Multi-agent - Two correct halves that didn't answer the question
-
-**Context:** The first complex sample question from the spec, run through the CLI on 2026-10-08 with `gemini-3.5-flash-lite`. At this point the manager sent the full question to both agents and printed their answers as two separate blocks; there was no synthesis step.
 
 **1. The query I submitted:** "How does our employee satisfaction compare to industry standards and what policies might impact this?"
 
@@ -664,8 +646,6 @@ external benchmarks for mid-sized software companies (500 to 2,000 employees) fo
 
 [TOKENOMICS] Agent: quantitative-sql   | Input: 393  | Output: 72  | Cost: $0.000298
 
-⚠️  VALIDATION WARNING: SQL ran, but Gemini was unavailable to explain the results
-
 SQL used: SELECT
     ROUND(AVG(satisfaction_score), 2) AS avg_employee_satisfaction,
     (SELECT ROUND(AVG(satisfaction_score), 2) FROM customers) AS avg_customer_satisfaction,
@@ -682,12 +662,12 @@ Results (227 rows):
   ... 177 more rows not shown
 ```
 
-**3. What the validation layer flagged:** Only the 503 on the interpretation step. The SQL passed `validate_sql` because it was a safe `SELECT`; the document answer passed because it was cited. Nothing checked whether either half, or the two together, answered the question.
+**3. What the validation layer flagged:** Nothing; The SQL passed `validate_sql` because it was a safe `SELECT`; the document answer passed because it was cited. Nothing checked whether either half, or the two together, answered the question.
 
 **Why I didn't trust it:** Each half looked reasonable on its own, but the question asks for a *comparison*, and neither half could make one. I checked both halves against the database and the documents:
 
-- **The document half** was accurate (every benchmark and policy I checked was correctly cited) but left out the parts most relevant to the data: the policy's **6.5 department threshold** that triggers a review, the **6.0 two-survey threshold**, and the line "Customer Support ... ha[s] historically scored lower than other departments". All three were in Source 1, which it was given.
-- **The data half answered the wrong question.** It received the whole question, including "compare to **industry standards**". The database has no industry data, so it compared employee satisfaction with the only other satisfaction column, from the **customers** table (7.28), which is meaningless here. It also grouped by department *and* tenure, producing **227 tiny groups** (many of one employee) and never returning the overall average (6.96) or the per-department averages (Customer Support 5.97).
+- **The document half** was accurate (every benchmark and policy I checked was correctly cited) but left out the parts most relevant to the data: the policy's 6.5 department threshold that triggers a review, the 6.0 two-survey threshold, and the line "Customer Support ... ha[s] historically scored lower than other departments". All three were in Source 1, which it was given.
+- **The data half answered the wrong question.** It received the whole question, including "compare to industry standards". The database has no industry data, so it compared employee satisfaction with the only other satisfaction column, from the customers table (7.28), which is meaningless here. It also grouped by department *and* tenure, producing 227 tiny groups (many of one employee) and never returning the overall average (6.96) or the per-department averages (Customer Support 5.97).
 - **Nothing combined them.** No part of the output compared 6.96 with the 7.1 benchmark, or noticed that Customer Support (5.97) is below the 6.5 threshold.
 
 **4. What I changed, and why:**
@@ -745,13 +725,7 @@ Results (1 rows):
 | Every fact attributed (`[Data]` / `[Source N]`) | ✅ No validation warning |
 | 7 document citations checked against their chunks | ✅ All correct |
 
-**What it still misses:**
-
-- **No per-department figures.** The split produced "What is our employee satisfaction score?", so only the overall average came back. Customer Support at **5.97**, below the policy's **6.5** threshold, the most actionable finding in the data, is still not visible. The split prompt says "at the level needed, for example overall and per department", but the model didn't apply it.
-- **The thresholds and the 7.5 target were left out again**, although they're in Source 1. Without them, even a per-department figure couldn't be compared with anything.
-- **"6.9584375"** is quoted to seven decimal places, because the synthesis prompt says "quote figures exactly as given" and the SQL didn't round.
-
-**Tokenomics:** The question now costs **$0.0047** across five calls. The synthesis call alone is $0.0020, almost as much as the document answer. The "before" run cost $0.0030 but answered nothing, and would have cost more if its interpretation call hadn't failed.
+**Tokenomics:** The question now costs $0.0047 across five calls. The synthesis call alone is $0.0020, almost as much as the document answer. The "before" run cost $0.0030 but answered nothing, and would have cost more if its interpretation call hadn't failed.
 
 **Final decision:**
 
@@ -759,3 +733,41 @@ Results (1 rows):
 - **Not accepted as complete:** The answer still misses the per-department picture and the thresholds, so it reports *that* we're below the benchmark but not *where* or what the policy requires.
 - **Next change:** Make the split always ask for the breakdown by the main group (department, region, industry) alongside the overall figure, and make the document question explicitly ask for thresholds and targets. Round figures to two decimal places in SQL.
 - **Lesson:** Splitting a question is itself a step that can lose information. A split that is too narrow produces a clean, correct, but shallow answer, which is harder to spot than an obviously wrong one.
+
+## Stretch Goals
+
+### Silver: completed
+
+I completed both Silver options.
+
+**Conversation history.** The manager remembers the last few questions in a session, so follow-ups like "What about 2024?" or "Is that above the benchmark?" work. Before answering, it rewrites the follow-up into a standalone question and prints it as `Interpreted as: ...`, so you can see how it was understood. Type `reset` to start a new conversation. Tested with `python check_history.py` (4/4 follow-ups rewritten correctly) and a three-turn conversation through the CLI.
+
+**Reviewer for the qualitative agent.** After each document answer, a second Gemini call checks every claim against the sources it cites, and flags claims that are unsupported, contradicted, uncited, or cited to the wrong source (`validation/reviewer.py`). Tested with `python check_reviewer.py`, which uses answers with known errors (6/6 correct).
+
+### Gold: completed (tokenomics optimisation)
+
+**Where the tokens go.** I analysed `tokenomics_log.jsonl` with `python -m tokenomics.report`. Before this change, the qualitative agent's answer call was 61% of all spending, and each call sent about 2,500–3,100 input tokens, almost all of it retrieved document chunks. While checking answers for the Trust-but-Verify examples, I'd also noticed that 8 of the 15 chunks retrieved for the three document questions were never used in the answer.
+
+**What I changed.** I lowered `top_k` (the number of chunks retrieved per question) from 5 to 3, in `agents/qualitative.py`. Before changing anything, I tested 8 combinations of chunk size and `top_k` with `python -m tokenomics.chunking_experiment`, which checks whether 33 key facts from the documents still make it into the retrieved context:
+
+| Chunk size / overlap / top_k | Key facts retrieved | Context words |
+|---|---|---|
+| 500 / 50 / 5 (before) | 33/33 | 1,959 |
+| 500 / 50 / 3 (chosen) | 33/33 | 1,195 |
+| 300 / 50 / 4 | 33/33 | 978 |
+| 250 / 50 / 5 | 30/33 | 1,056 |
+| 200 / 40 / 6 | 30/33 | 1,093 |
+
+Smaller chunks lost facts from the code review document. 300-word chunks with `top_k=4` saved the most, but only because all four chunks of a document happened to rank first, so one more paragraph in a document could start losing facts. With 500-word chunks each document is 2 chunks, so `top_k=3` gets the whole document plus one spare, and it's a one-number change.
+
+**Did quality drop?** I ran the three document questions with both settings and the same prompt (`python -m tokenomics.topk_comparison`), checked each answer for its key facts, and ran the reviewer on each:
+
+| Question | Input tokens (5 → 3) | Key facts in answer | Reviewer |
+|---|---|---|---|
+| How do we handle customer complaints? | 3,073 → 1,693 | 7/8 → 7/8 | no issues → no issues |
+| Explain the code review process | 2,587 → 1,778 | 8/9 → 8/9 | no issues → no issues |
+| What is our company's security policy? | 3,092 → 1,998 | 10/10 → 10/10 | no issues → no issues |
+
+Input tokens fell by 37% on average (about 1,100 fewer per question), with no facts lost and no new reviewer issues. The facts that were missing were missing with both settings.
+
+The saving in tokens is bigger than the saving in money. Output tokens cost about 8× more than input, and output is roughly two thirds of the cost of an answer, which this change doesn't touch. So it saves about $0.0003 per document question, around 10% of that call's cost (about $0.33 per 1,000 document questions). The reviewer was left as it was. The next saving would have to come from shorter answers, which would trade against the completeness fixes in that I made earlier.

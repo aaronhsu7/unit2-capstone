@@ -11,7 +11,16 @@ load_dotenv()
 client = genai.Client()  # reads GEMINI_API_KEY from .env
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-def retrieve(query: str, top_k: int = 5) -> list[dict]:
+# Number of chunks retrieved per question. Lowered from 5 to 3 to cut input
+# tokens (README: Tokenomics Optimisation). With 500-word chunks each document
+# is 2 chunks, so 3 retrieves a whole document plus one spare. Measured with
+# tokenomics/chunking_experiment.py: context fell from 1,959 to 1,195 words
+# (-39%) with all 33 key facts still retrieved. Smaller chunks (250 or 200
+# words) lost facts; 300-word chunks with top_k=4 saved more but only worked
+# if all four chunks of a document ranked first, with no margin.
+TOP_K = 3
+
+def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
     chroma = chromadb.PersistentClient(path="./data/chroma")
     collection = chroma.get_collection("enterprise-docs")
     embedding = model.encode([query]).tolist()
@@ -61,11 +70,9 @@ def build_prompt(query: str, chunks: list[dict]) -> str:
     #   claim (README Trust-but-Verify, Example 2).
     # - Question after the context, ending with "ANSWER:": the question is the
     #   last thing the model reads, and the reply starts with the answer itself.
-    # - Token cost: the context is almost all of the input. 5 chunks of up to
-    #   500 words is roughly 3,000+ input tokens per question (estimate, to be
-    #   confirmed from tokenomics_log.jsonl). top_k and the chunk size in
-    #   ingest.py are the main levers for reducing it. The instructions
-    #   themselves are under 150 tokens.
+    # - Token cost: the context is almost all of the input. With 5 chunks this
+    #   was 2,500-3,100 input tokens per question (measured); TOP_K is now 3
+    #   (see above). The instructions themselves are under 150 tokens.
     return f"""You are a helpful enterprise documentation assistant.
 Answer the question using ONLY the context provided below. Do not guess or add information from general knowledge.
 If the context does not contain the answer, reply with exactly this sentence and nothing else: "I cannot find this information in the provided documents."
